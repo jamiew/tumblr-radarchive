@@ -1,0 +1,5 @@
+config/database.yml
+config/tumblr.yml
+config/deploy.rb
+*.log
+cookies.yml
