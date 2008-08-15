@@ -2,5 +2,5 @@
   :authenticate: true
   :email: you@example.com
   :password: secret
-  :group: radarchive.tumblr.com
-  :group_name: Radarchive
+  :group:
+  :group_name:

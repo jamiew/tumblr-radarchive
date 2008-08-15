@@ -9,20 +9,21 @@ require 'yaml'
 require 'active_record'
 require 'models'
 
-# Tumblr config
+# Load Tumblr config
 ($config ||= {})[:tumblr] = YAML.load_file(File.dirname(__FILE__)+"/config/tumblr.yml")[:tumblr]
 
-# Connect to database
+# Load DB config & connect
 $config[:database] = YAML.load_file( File.dirname(__FILE__)+'/config/database.yml')
 ActiveRecord::Base.logger = Logger.new('../database.log')
 ActiveRecord::Base.colorize_logging = true
 ActiveRecord::Base.establish_connection($config[:database][ (ENV['MERB_ENV'] || :development).to_sym])
 
 # Should we log in first? Can get reblog data that way
-def authenticate?; $config[:tumblr][:authenticate] || false; end
+def authenticate?; !$config[:tumblr][:authenticate].nil? || false; end
+def authenticated?; return authenticate?; end # TODO, detect if we are authenticated
 
 
-# FIXME put or get from a lib or something geeze
+# FIXME get from a lib or something! Geeze
 class String
   def strip_html(allowed = ['a','img','p','br','i','b','u','ul','li'])
   	str = self.strip || ''
@@ -33,7 +34,7 @@ end
 
 ##########
 # save a grip of radar posts to the database
-# FIXME this is one gigantic function wowsa o_O
+# TODO this one gigantic function should be broken up O_o
 def save(posts)
 
   added, skipped = 0, 0
@@ -41,20 +42,21 @@ def save(posts)
 
     # deduce the post type via class
     author, data = {}, {}    
-    data[:type] = /\s(.*)_post\s?/.match( post.attributes['class'] )[1].to_s rescue 'photo' # should default to :default
+    data[:type] = /\s(.*)_post\s?/.match( post.attributes['class'] )[1].to_s rescue 'photo' # TODO should default to :default
 
+    # all posts except 'photo' contain all the info we need
+    # 'photo' posts need to visit their permalink and get the full image path and reblog link
     case data[:type] 
     when 'photo'
       author[:name] = post['href'].split('/')[2].gsub('.tumblr.com','')
       author[:url] = post.attributes['href'].gsub(/post.*$/,'')
-      data[:url] = post.attributes['href'] #FIXME? or parse later. hard to tell which user they are...
-
-      # data[:content] = post.search('img')[0].to_s
+      data[:url] = post.attributes['href']
 
       unless Post.exists?(:type => 'photo', :url => data[:url])
+
         # fetch the post's page to get the full details
         puts "Paying a visit to: #{data[:url]}"
-        page = $agent.get(data[:url]) rescue (puts "Failed to get second visit: #{$!}"; next)
+        page = $agent.get(data[:url]) rescue (puts "Failed to get permalink page: #{$!}"; next)
 
         # try a few variations on what their content div might be called... sheesh
         photo_divs = ['.post_container','.photo', '.post']
@@ -62,7 +64,6 @@ def save(posts)
         photo_divs.each { |div|
          photo_div = div if photo_div.empty? && !page.search("#{div} img").empty? #fingers crossed
         }
-        # puts "Settled on photo_div = #{photo_div}"
 
         # find image and "source" (description)
         data[:content] = page.search(photo_div+' img')[0].to_s rescue nil # first image? TODO find the biggest image
@@ -80,12 +81,11 @@ def save(posts)
         end
       end      
 
-    #when 'quote'
-    #when 'video' # TODO make request for YouTube stats
+    # all other kinds of posts: regular, quote, video, link, conversation
     else
       
       # capture reblog link if we're authenticating
-      # FIXME this is very loosely targetted and prone to breaking
+      # TODO this is very loosely targetted and prone to break
       if authenticate?
         first_link = post.search('a:first').remove
         data[:reblog_link] = first_link[0]['href']
@@ -93,16 +93,18 @@ def save(posts)
       end
       
       # capture the rest of the content & metadata
-      link = post.search('.attribution').remove.search('a')[0]
+      link = post.search('.attribution a').remove[0]
       author[:name] = link.innerHTML
       author[:url] = link['href'].gsub(/\/post.*$/,'')
 
-      # there's only sometimes a permalink, lame. TODO
+      # there's only sometimes a permalink O_o -- TESTME
       link = post.search('a.more')[0]
       data[:url] = link['href'] unless (link.nil? || (link['href'] == author[:url]))
       data[:url] ||= post.search('a')[0]['href'] rescue nil
 
-      #TODO parse into a proper hash a la tumblr? now is the time if we want to at all
+      # TODO parse into a proper hash a la tumblr, with content, source, etc broken up? 
+      # now is the time if we want to at all
+      
       data[:content] = post.innerHTML.strip
       #puts "content = #{data[:content].inspect}"
     end
@@ -112,7 +114,6 @@ def save(posts)
     user.save! if user.new_record?
     data[:user_id] = user.id
   
-    #puts "#{data[:user_id]} #{data[:type]} #{data[:url]} userURL = #{author[:url]}"
     obj = Post.find_or_initialize_by_type_and_user_id_and_url(data)
     if obj.new_record?
       # next if obj.reblog_link.nil? or obj.reblog_link.empty?
@@ -125,7 +126,7 @@ def save(posts)
       skipped += 1
     end
   }
-  puts "#{added} new posts, #{skipped} skipped."
+  puts "#{added} new posts. #{skipped} skipped."
 
 end
 
@@ -135,7 +136,7 @@ end
 #########
 # post to tumblr (by reblogging it to your specified group)
 def post_to_tumblr(post)
-  puts "post to tumblr: #{post.id}, #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
+  puts "Post to Tumblr: #{post.id}, #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
   
   raise RuntimeError, "Can't post w/o a reblog link" if post.reblog_link.nil? or post.reblog_link.empty? or post.reblog_link == '/'
   
@@ -174,7 +175,8 @@ puts "----------"
 puts Time.now
 
 $agent = WWW::Mechanize.new
-$agent.user_agent = 'Radarchive <http://radarchive.tumblr.com>'
+$agent.user_agent = "Tumblr Radar Scraper 1.0 (#{$config[:tumblr][:email] || 'anonymous'})"
+puts $agent.user_agent
 
 # log in (so we can get reblog links)
 if authenticate? 
@@ -189,9 +191,9 @@ if authenticate?
     # test if we're logged in OK by number of links on an unlogged-in-page
     # FIXME. use some kind of auth header perhaps, or the Tumblr API
     links = $agent.get('http://www.tumblr.com/dashboard').links
-    puts "Num of links on dashboard: #{links.length}"
+    puts "Dashboard link count: #{links.length}"
     if links.length <= 13
-      raise RuntimeError, "Could not reach the Dashboard, cookies are probably no longer valid!" 
+      raise RuntimeError, "Could not reach the Dashboard; cookies are probably no longer valid" 
     end
   rescue  
     puts "#{$!}... logging in..."
@@ -199,11 +201,14 @@ if authenticate?
     form = page.forms[0]
     form.email = $config[:tumblr][:email]
     form.password = $config[:tumblr][:password]
-    $agent.submit(form)
-    puts "done, saving cookies"
+    page = $agent.submit(form)
+    
+    # did we login OK? TODO check for redirect code, not just title
+    raise RuntimeError, "Login failed! Check your credentials." unless (page/:title).innerHTML == "Logging in..."
+    
+    puts "Authenticated! Saving cookies..."
     $agent.cookie_jar.save_as('cookies.yml') # Save the cookies
-  ensure
-    puts "Authenticated!"
+
   end
 end
 
