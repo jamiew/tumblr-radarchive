@@ -1,0 +1,220 @@
+/* Radarchive 1.0 CSS by jamiew */
+
+body {
+  font-family: sans-serif;
+  font-size: 9pt;
+  margin: 0;
+  padding: 0;
+  background: #050A10; /* close but not quite amirite */
+}
+a { color: #03ACEB; }
+a img { border-width: 0px; }
+
+#container-wrapper { 
+  width: 600px;
+  margin: 0 auto;
+  margin-top: 50px;
+  background: #fff url(/images/content_bg.png) repeat-y scroll 0 0; 
+}
+#container {
+  padding: 2em 3em 0 3em;
+/*  background-color: #fff;*/
+}
+#rounded-top { background: transparent url(/images/content_top.png) no-repeat scroll center 0px; }
+#rounded-bottom { background: transparent url(/images/content_bottom.png) no-repeat scroll center bottom; }  
+
+#header { 
+  color: #ccc;
+  height: 80px; 
+  padding: 10px 0px 10px 0px;
+  border-bottom: solid 1px #dadada;
+}
+#header h1 {
+  font: normal 25px Arial, Helvetica;  
+  font-family: "Trebuchet MS", sans-serif;
+  text-transform: uppercase;
+  letter-spacing: -1px;
+  font-size: 24pt;
+  text-align: left;
+  margin: 0;
+/*  padding: 0.5em 0 2em 0;*/
+  text-transform: uppercase;
+}
+#header h1 a {
+  color: #3e4d5c;
+  text-decoration: none;
+}
+
+
+
+
+/* nav */
+#navigation {
+  margin: -90px 10px 0 0;
+  width: 300px; 
+  float: right;
+  clear: right;
+  text-align: right;
+  color: #ccc;
+}
+#navigation a { 
+  font-weight: bold; 
+  font-size: 9pt; 
+  padding: 0 5px; 
+  text-decoration: none;
+}
+
+/* footer ... */
+#footer {
+  text-align: right;
+  font-size: 0.9em;
+  color: #999;
+  padding: 3em 1em 1em 0;
+}
+
+/* sidebar */
+#sidebar { color: #777; font-size: 0.9em; }
+#sidebar a { color: #666; }
+
+
+/* pagination */
+.pagination { 
+  font-size: 9pt; 
+  padding: 3px 0 2px 0; 
+  margin-bottom: 1em;
+  background-color: #f9f9f9;
+  color: #999;
+  text-align: center;
+  height: 22px; /* just to prevent weird resizings when there's a next but not an older */
+  overflow: visible;
+}
+.pagination a { 
+  color: #888; 
+  font-size: 14pt; 
+  text-decoration: none; 
+/*  border-bottom: 1px dotted #eee; */
+  display: block;
+  padding: 0 5px;
+}
+.pagination .next { float: right; }
+.pagination .previous { float: left; }
+
+
+/* tagging */
+#tags {
+  list-style: none;
+  display: none;
+  background-color: #eee;
+  position: absolute;
+  z-index: 100;
+  padding: 0px;
+/*  border-bottom: 1px solid #ccc;*/
+  border: 1px solid #ddd;
+  border-top: 0;
+}  
+#tags a { 
+  display: block;
+  color: #777;
+  font-size: 12pt; 
+  padding: 5px 4px 3px 6px;
+  width: 140px;
+  text-decoration: none;
+}
+#tags a:hover { 
+  background-color: #f9c0ea;
+  color: #757;
+}
+
+
+/* content */
+#content { 
+}
+#content .post {   }
+#content h2, #content .post p {
+  margin: 0 0 0px 0;
+  padding: 0 0 5px 0;
+}
+#content h2 { 
+  margin-top: 20px;
+  color: #666; 
+  font-family: "Lucida Sans";
+  font-size: 10pt;
+}
+#content h2 a { 
+/*  border-bottom: 1px solid #DDDDDD;*/
+  color: #1C70B1;
+/*  line-height: 24px;*/
+  text-decoration: none;
+}
+
+#content h3 {
+  font-size: 2em;
+  margin: 5px 0 15px 0;
+  line-height: 1.2em;
+}
+
+#content .post {
+  padding-bottom: 1em;
+  margin-bottom: 2em;
+  border-bottom: 1px solid #eee;
+  line-height: 1.3em;
+  color: #777;
+}
+
+#content .type, #content .date { color: #aaa; font-size: 0.8em; }
+#content .audio .type { color: #baa; }
+#content .video .type { color: #aba; }
+#content .quote .type { color: #aab; }
+#content .photo .type { color: #bba; }
+#content .regular .type { color: #bab; }
+
+#content .audio .audio_player { 
+  border: 1px solid #ccc; 
+  background-color: #f9f9f9; 
+  display: inline; 
+  padding: 20px 20px 0px 20px; 
+}
+/* other cool shit */
+
+#content .post div.quote {
+  padding: 0 2em;
+  color: #999;
+  font-size: 1.5em;
+  line-height: 1.2em;
+}
+#content .post .quote_attribution {
+  margin-top: 5px;
+  margin-left: 3em;
+}
+
+#content .post a.more {
+  background-color:#EEEEEE;
+  border-width:0;
+  color:#666666;
+  font-family:arial,sans-serif;
+  font-size:10px;
+  padding:0 2px;
+  text-decoration:none;
+  white-space:nowrap;
+}
+
+#content .post .flag a {
+  font-size: 9pt;
+  font-family: "Lucida Sans";
+}
+
+/* v/a tumblr styles */
+#content a.big_link {
+  display: block;
+  font-size: 2.5em;
+  line-height: 1em;
+  padding: 0.5em 0;
+}
+
+
+#leaderboard li {
+  list-style: none;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}

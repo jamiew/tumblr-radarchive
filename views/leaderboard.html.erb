@@ -1,0 +1,12 @@
+<h2>Leaderboard</h2>
+<p>
+Who gets on the Radar the most?<br />
+I only have <%= time_ago_in_words(Post.find(:first).created_at) %> worth of data so far
+</p><br />
+
+<ol id="leaderboard">
+<% @users.group_by { |g| g.post_count }.sort_by { |post_count,users| post_count }.reverse.each { |post_count, users| -%>
+	<li><strong><%= post_count %> <%= post_count.to_i > 1 ? 'posts' : 'post' %></strong> <% if users.length > 1 %><%= users.length %> people <% end %>
+	<%= users.collect { |u| "<a href=\"#{u.url}\">#{u.name}</a>" }.join(', ') %> <span class="post-count"></span</li>
+<% } -%>
+</ol> <!-- #leaderboard -->

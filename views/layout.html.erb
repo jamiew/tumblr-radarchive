@@ -1,0 +1,78 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html>
+<head>
+	<meta http-equiv="Content-type" content="text/html; charset=utf-8">
+	<meta http-equiv="Content-Language" content="en" />
+
+	<title>Radarchive<% if !@page.nil? && @page > 1 %><%= ", page #{@page}" %><% elsif request.uri == '/' %>, a brief history of Tumblr Radar<% else %><%= ":"+request.uri.gsub('/',' ').capitalize %><% end %></title>
+
+	<meta name="author" value="jamiedubs.com" />
+	<meta name="robots" value="noindex, follow" />
+        <link rel="shortcut icon" href="/favicon.ico" /> 
+	
+	<link rel="stylesheet" href="/style.css" type="text/css" media="screen" title="no title" charset="utf-8">
+	
+	<script src="/js/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/js/jquery.dimensions.js" type="text/javascript" charset="utf-8"></script>
+	<script src="/application.js" type="text/javascript" charset="utf-8"></script>
+	
+</head>
+<body>
+	<div id="container-wrapper">
+	<div id="rounded-top">
+	<div id="rounded-bottom">
+	<div id="container">
+			
+
+		<!-- tumblr follow/dashboard iframe -->
+		<% tumblr_mirror = "radarchive.tumblr.com" %>
+		<iframe src="http://www.tumblr.com/dashboard/iframe?src=http%3A%2F%2F<%= tumblr_mirror %>%2F" 
+		border="0" scrolling="no" width="278" height="25" allowTransparency="true"
+		frameborder="0" style="position:absolute; z-index:1337; top:0px; right:0px; border:0px;
+		background-color:transparent; overflow:hidden;" id="tumblr_controls"></iframe>			
+			
+		<div id="header">
+			<!-- <h1>Radarchive</h1> -->
+			<h1><a href="http://radarchive.tumblr.com"><img src="/images/radar.gif" height="40" alt="" /> Radarchive</a></h1>
+			<p class="description">like the <a href="http://tumblr.com">Tumblr Radar</a>, but more fun</p>
+
+		</div> <!-- #header -->
+
+		<div id="navigation">
+			<a href="/leaderboard">leaderboard</a> 
+                        | <a href="http://radarchive.tumblr.com/rss"><img border="0" height="12" src="http://farm2.static.flickr.com/1121/1430385323_4d4351d815.jpg?v=0" alt="" /> RSS</a>
+			<!--| <a href="/tags">tags</a>-->
+		</div> <!-- #navigation -->
+
+		<div id="sidebar" style="display: none;">
+		</div>		
+
+		<div id="content">
+	    <%= catch_content :for_layout %>
+		</div> <!-- #content -->
+
+		<div id="footer">
+			made by <a href="http://jamiedubs.com">Jamie Wilkinson</a> &rarr; <script type="text/javascript" charset="utf-8">document.write('<a href="mailto:jamie@internetfamo.us">email</a>');</script> <br />
+			code at <a href="http://dev.eyebeam.org/projects/radarchive/">dev.fffff.at</a><br />
+			copyfree 2008 &rarr;
+			<p><a href="http://fffff.at"><img src="http://rickrolldb.com/images/fatlab.png" title="FATLAB" alt="FATLAB" border="0"> <img src="http://rickrolldb.com/images/fatlab.png" title="FATLAB" alt="FATLAB" border="0"> <img src="http://rickrolldb.com/images/fatlab.png" title="FATLAB" alt="FATLAB" border="0">
+		</div>
+		
+	</div> <!-- #rounded-top -->
+	</div> <!-- #rounded-bottom -->
+ 	</div> <!-- #container -->	
+	</div> <!-- #container-wrapper -->
+
+<!-- stats -->
+
+<script type="text/javascript">
+var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+</script>
+<script type="text/javascript">
+var pageTracker = _gat._getTracker("UA-96220-18");
+pageTracker._trackPageview();
+</script>
+
+</body>

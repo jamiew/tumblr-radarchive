@@ -1,0 +1,3 @@
+# nothing original here. please move along.
+User-agent: *
+Disallow: /

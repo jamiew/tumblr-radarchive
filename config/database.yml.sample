@@ -1,0 +1,18 @@
+:development: &defaults
+  # :adapter: sqlite3
+  :adapter: mysql
+  :database: radarchive_dev
+  :username: root
+  :password: 
+  :host: localhost
+
+:test:
+  <<: *defaults
+  :database: radarchive_test
+
+:production:
+  <<: *defaults
+  :database: radarchive_prod
+  
+:rake:
+  <<: *defaults
