@@ -78,7 +78,7 @@ def save(posts)0
     if authenticate?
       puts "Getting original page #{data[:url]}..."
       page = $agent.get(data[:url])
-      iframe_url = page.search('iframe')[0]['src']        
+      iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src']        
       
       puts "Getting iframe @ #{iframe_url}..."
       iframe = $agent.get(iframe_url)
