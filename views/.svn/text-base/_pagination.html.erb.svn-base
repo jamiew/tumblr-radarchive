@@ -1,0 +1,7 @@
+<div class="pagination">
+	<% last_page = (@post_count / @limit).ceil %>
+	<% if @page > 1 %><a class="previous" href="<%= @page == 2 ? '/' : "/page/#{@page - 1}" %>">&larr; Newer</a><% end %>
+	<% unless @page == last_page %><a class="next" href="/page/<%= @page + 1 %>">&rarr; Older</a><% end %>
+	<%#= "page #{@page} of #{last_page}" %> 
+	<br style="clear: both;" />
+</div>

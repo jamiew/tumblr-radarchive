@@ -1,0 +1,18 @@
+<%
+require 'rss/maker'
+content = RSS::Maker.make("2.0") { |m|
+  m.channel.title = "Radarchive"
+  m.channel.link = "http://jamiedubs.com/radarchive/"
+  m.channel.description = "Latest posts on the Tumblr Radar"
+  # m.items.do_sort = true # sort items by date
+  
+  @posts.each { |post|
+    i = m.items.new_item
+    i.title = "#{post.type} by #{post.user.name}"
+    i.link = post.url || post.user.url
+    i.description = post.content
+		i.date = post.created_at
+  }
+}
+-%>
+<%= content %>
