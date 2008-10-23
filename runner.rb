@@ -106,13 +106,17 @@ def save(data)
   # capture reblog URL and re-post if we are authenticating
   if authenticate?
     # puts "Getting original page #{data[:url]}..."
-    page = $agent.get(data[:url])
-    iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src'] rescue nil
+    begin
+      page = $agent.get(data[:url])
+      iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src'] rescue nil
     
-    # puts "Getting iframe @ #{iframe_url.inspect}..."
-    iframe = $agent.get(iframe_url)
-    obj.reblog_link = iframe.links.first.href
-    puts "reblog link = #{obj.reblog_link.inspect}"
+      # puts "Getting iframe @ #{iframe_url.inspect}..."
+      iframe = $agent.get(iframe_url)
+      obj.reblog_link = iframe.links.first.href
+      puts "reblog link = #{obj.reblog_link.inspect}"
+    rescue
+      puts "(!!) Error getting original page: #{$!}"
+    end
   end
   
 
@@ -125,7 +129,7 @@ def save(data)
     # added += 1
         
     # now post to tumblr if we're authenticated
-    if authenticate?
+    if authenticate? && !obj.reblog_link.blank?
       puts "Posting to tumblr..."
       post_to_tumblr(obj) rescue (puts "Could not post to tumblr: #{$!}")
     end
