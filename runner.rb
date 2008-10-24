@@ -89,6 +89,7 @@ def save(data)
     
   author = data.delete(:author)    
   puts "URL = #{data[:url]}, Author = #{author.inspect}"
+  author[:name] = author[:url].gsub('http://','') if author[:name].blank?
   
   # save
   user = User.find_or_initialize_by_url(author)
