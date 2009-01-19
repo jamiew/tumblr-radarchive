@@ -22,7 +22,7 @@ end
 # person who posts such nonsense
 class User < ActiveRecord::Base
   has_many :posts
-  validates_presence_of :name, :on => :create, :message => "can't be blank"
+  #validates_presence_of :name, :on => :create, :message => "can't be blank"
   validates_presence_of :url, :on => :create, :message => "can't be blank"
   validates_uniqueness_of :url, :on => :create, :message => "must be unique"
   
