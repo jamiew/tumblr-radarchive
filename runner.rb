@@ -109,7 +109,7 @@ end
 
 # post to tumblr (by reblogging it to your specified group)
 def reblog_post(post)
-  puts "> reblogging: #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
+  # puts "> reblogging: #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
   raise RuntimeError, "Can't post w/o a reblog link" if post.reblog_link.nil? or post.reblog_link.empty? or post.reblog_link == '/'
   
   type = post.attributes['type'] # FIXME: stupid not-overriding-STI hackthrough nonsense
@@ -121,7 +121,6 @@ def reblog_post(post)
   #   and action (somewhat like the reblog_link) fluctuate a great deal and using index seems more reliable
   form = page.forms[1]
   channel = form.field('channel_id')
-  puts form.field('post[two]').value.inspect
   channel.value = channel.options.select { |o|
     o.value if o.text.strip.downcase == $config[:tumblr][:group_name].strip.downcase
   }
