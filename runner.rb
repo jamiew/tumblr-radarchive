@@ -1,8 +1,16 @@
+#!/usr/bin/env ruby
 # @name   tumblr radar scraper
 # @author Jamie Wilkinson <http://jamiedubs.com>
 # @email  jamie@internetfamo.us
+#
+# 2009-01-28: updated for Tumblr v5, significantly refactored, 
+#             and running on Mechanize 0.9 + Nokogiri
+# ...
+#
 
 require 'rubygems'
+# gem 'mechanize', '0.8.5'
+gem 'mechanize', '0.9.0' # w/ Nokogiri (which has no .innerHTML afaik)
 require 'mechanize'
 require 'yaml'
 require 'active_record'
@@ -12,17 +20,16 @@ require 'models'
 # Tumblr config
 ($config ||= {})[:tumblr] = YAML.load_file(File.dirname(__FILE__)+"/config/tumblr.yml")[:tumblr]
 
+# Should we log in first? That way we can get reblog information
+def authenticate?; $config[:tumblr][:authenticate] || false; end
+
 # Connect to database
 $config[:database] = YAML.load_file( File.dirname(__FILE__)+'/config/database.yml')
 ActiveRecord::Base.logger = Logger.new(File.dirname(__FILE__)+'/database.log')
 ActiveRecord::Base.colorize_logging = true
 ActiveRecord::Base.establish_connection($config[:database][ (ENV['MERB_ENV'] || :development).to_sym])
 
-# Should we log in first? Can get reblog data that way
-def authenticate?; $config[:tumblr][:authenticate] || false; end
-
-
-# FIXME put or get from a lib or something geeze
+# TODO: put in or get from a lib, like extlib, or the future merbified ActiveSupport
 class String
   def strip_html(allowed = ['a','img','p','br','i','b','u','ul','li'])
   	str = self.strip || ''
@@ -30,49 +37,21 @@ class String
   end
 end
 
+# Tumblr uses Unicode! Otherwise some characters from textareas end up us ?'s
+$KCODE = 'UTF-8'
 
 
-# extracts array of posts from a mechanize page
+# extend a Mechanize page with methods
+# to extract posts from the Tumblr Radar page
 class WWW::Mechanize::Page
 
   def radar_posts  
-    return self.search('.radar_item').map { |post|      
-      
-      # try our best to guess the post type
-      # TODO can determine post-facto via Tumblr API
-      if post.search('a.link').length > 0
-        type = 'link' 
-      elsif post.search('div.quote').length > 0
-        type = 'quote'
-      elsif post.search('embed').length > 0
-        type = 'audio'
-      # TODO ...
-      else
-        type = 'default'
-      end
-      
-      data = { :type => type, :content => post.search('div')[0].innerHTML }      
-
-      # capture permalink
-      link = post.search('a.permalink')[0]
-      data[:url] = link['href']
-      # data[:url] ||= post.search('a')[0]['href'] rescue nil # 2nd-try
-    
-      # capture the author info
-      # meta = post.search('.info').remove[0]
-      link = post.search('a.username')[0]      
-      data[:author] = { :name => link.innerHTML, :url => link['href'] }
-      data
-    }
-  end
-
-  def radar_images
-    return self.search('#photos a').map { |link|
-      url = /url\(\'(.*)\'\)/.match(link['style'])[1]
-      data = { :type => 'photo', :url => link['href'], :content => '<img src="'+url+'" />' }
-      author_url = /\w+([-+.'\/]\w+)*.\w+([-.]\w+)*\.\w+([-.]\w+)*/.match(link['href'])[0] 
-      data[:author] = { :name => link['title'], :url => "http://#{author_url}" }
-      data
+    # Thanks for adding the post-type to the classes guise! 
+    # We'll also grab the post content
+    # Author info is no longer available in Tumblr v5
+    return self.search('.radar_post').map { |post|  
+      type = post['class'].gsub('radar_post','').strip
+      { :type => type, :content => post.to_s, :url => post['href'] }
     }
   end
   
@@ -84,145 +63,126 @@ end
 
 
 
-# save a Radar post as an Post AR object
+# transform a Radar post into a Post object and save
 def save(data)
     
-  author = data.delete(:author)    
-  puts "URL = #{data[:url]}, Author = #{author.inspect}"
-  author[:name] = author[:url].gsub('http://','') if author[:name].blank?
+  tumblelog_url = /(http:\/\/[^\/]*)(\/.*)/.match(data[:url])[1]
+  puts "#{data[:type]}, URL = #{data[:url]}, author = #{tumblelog_url}"
   
-  # save
-  user = User.find_or_initialize_by_url(author)
+  # Find/create the user (tumblelog) who owns this post
+  user = User.find_or_initialize_by_url(tumblelog_url)
   user.save! if user.new_record?
   data[:user_id] = user.id
-
-  #puts "#{data[:user_id]} #{data[:type]} #{data[:url]} userURL = #{author[:url]}"
-  obj = Post.find_or_initialize_by_user_id_and_url(data)
-  if not obj.new_record?
-    # skipped += 1
-    # next
-    return
-  end
-      
-  # capture reblog URL and re-post if we are authenticating
-  if authenticate?
-    # puts "Getting original page #{data[:url]}..."
-    begin
-      page = $agent.get(data[:url])
-      iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src'] rescue nil
-    
-      # puts "Getting iframe @ #{iframe_url.inspect}..."
-      iframe = $agent.get(iframe_url)
-      obj.reblog_link = iframe.links.first.href
-      puts "reblog link = #{obj.reblog_link.inspect}"
-    rescue
-      puts "(!!) Error getting original page: #{$!}"
-    end
-  end
   
-
-  # save!
-  begin
-    obj.content = data[:content]
-    puts "Content length #{data[:content].length}"
-    obj.save!
-    puts "#{data[:type]} by #{author[:name]} @ #{author[:url]}, url = #{data[:url]}"
-    # added += 1
+  # Create a new object for this post
+  # Bail if it already exists in our database (no duplicates please!)
+  obj = Post.find_or_initialize_by_user_id_and_url(data)
+  return if not obj.new_record?
+  obj.content = data[:content]
         
-    # now post to tumblr if we're authenticated
-    if authenticate? && !obj.reblog_link.blank?
-      puts "Posting to tumblr..."
-      post_to_tumblr(obj) rescue (puts "Could not post to tumblr: #{$!}")
-    end
-  rescue
-    puts "(!!) Failed to save or post to Tumblr: #{$!}"
-    # puts "(!!) Failed to save or post to Tumblr: #{$!}\n#{$!.backtrace.join("\n\t")}"
-    # failed += 1
-  end
-
-  # puts "#{added} new posts, #{skipped} skipped."
-
+  # Descend to the page and capture reblogging info (if we're logged in & reblogging stuff)
+  obj.reblog_link = post_info_for(data[:url])[:reblog_link] if authenticate?
+  puts "> reblog link: #{obj.reblog_link}"
+  reblog_post(obj) if authenticate? && !obj.reblog_link.blank?
+  obj.save!  
+rescue
+  puts "(!!) Failed to save or post to Tumblr: #{$!}\n#{$!.backtrace.join("\n\t")}"
+  # failed += 1
 end
+
+
+# Fetch a single post and return notable information
+# For now just returning the reblog link, but ideally would also grab their Tumblelog's name, etc.
+def post_info_for(url)
+  page = $agent.get(url)
+  iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src'] rescue nil
+
+  # puts "Getting iframe @ #{iframe_url.inspect}..."
+  iframe = $agent.get(iframe_url)
+  return { :reblog_link => iframe.links.first.href }
+
+rescue
+  STDERR.puts "(!!) Error getting original page: #{$!}"
+end  
 
 
 
 # post to tumblr (by reblogging it to your specified group)
-def post_to_tumblr(post)
-  puts "Post to Tumblr: #{post.id}, #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
-  
+def reblog_post(post)
+  puts "> reblogging: #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
   raise RuntimeError, "Can't post w/o a reblog link" if post.reblog_link.nil? or post.reblog_link.empty? or post.reblog_link == '/'
   
-  type = post.attributes['type'] # FIXME: stupid
+  type = post.attributes['type'] # FIXME: stupid not-overriding-STI hackthrough nonsense
   page = $agent.get("http://www.tumblr.com#{post.reblog_link}")
 
-  # fill out the form
-  form = page.forms[0]
+  # Fill out said form
+  # FIXME: having some character encoding issues that end up in ?'s
+  # FIXME: find the form more intelligently; sadly both the form id (#edit_post) 
+  #   and action (somewhat like the reblog_link) fluctuate a great deal and using index seems more reliable
+  form = page.forms[1]
   channel = form.field('channel_id')
+  puts form.field('post[two]').value.inspect
   channel.value = channel.options.select { |o|
     o.value if o.text.strip.downcase == $config[:tumblr][:group_name].strip.downcase
   }
 
-  # TODO do some error checking that we got a value at all if using groups
-  # so we're not accidentally posting to yr main tumblr
+  # ....and submit the form
+  page = $agent.submit(form)
+  puts "> done; #{page.body.length} bytes on resulting page."
+rescue
+  STDERR.puts "Error submitting reblog: #{$!}"
+end
 
-  puts "Submitting reblog..."
-  begin
-    page = $agent.submit(form)
-    puts "Done. #{page.body.length} bytes on resulting page."
-  rescue
-    puts "Error submitting reblog: #{$!}"
-  end
 
+# Login to Tumblr
+# Load cookies, test if we're they're still valid, and authenticate on /login if not
+def login(config)
+
+  puts "Loading cookies..."
+  $agent.cookie_jar.load('cookies.yml')
+  raise RuntimeError, "Cookies no longer valid" unless logged_in?
+
+rescue  
+  puts "#{$!}... logging in..."
+  page = $agent.get("http://www.tumblr.com/login")
+  form = page.form_with(:action => '/login')
+  form.email = config[:email]
+  form.password = config[:password]
+  $agent.submit(form)
+  puts "done; saving cookies..."
+  $agent.cookie_jar.save_as('cookies.yml') # Save the cookies
+end
+
+# Test if we're logged in or not
+# Currently checking the number of links on an unlogged-in-page (ghetto)
+# Fetching an iframe page would probably be nicer to the servers/Marco
+# or could we even use the API authentication-test method?
+def logged_in?
+  links = $agent.get('http://www.tumblr.com/dashboard').links
+  puts "Num of links on dashboard: #{links.length}"
+
+   # Tumblr mainpage has 14 links, which is where we'll get redirected to if not logged in
+  return links.length >= 14
 end
 
 
 
 
-# init
+
+# main
 puts "---------- #{Time.now} ----------"
 
 $agent = WWW::Mechanize.new
 $agent.user_agent = 'Radarchive <http://radarchive.tumblr.com>'
 
+# login (so we can get reblog links)
+puts "Logging in..."
+login($config[:tumblr]) if authenticate? 
 
-# log in (so we can get reblog links)
-if authenticate? 
-  
-  # load cookies
-  # TODO rescue if couldn't get a page that requires authentication -- right now doing an extra fetch for the dashboard
-  begin
-    puts "Loading cookies..."
-    $agent.cookie_jar.load('cookies.yml')
-
-    # test if we're logged in via the number of links on an unlogged-in-page
-    # FIXME. just use some kind of auth header perhaps
-    links = $agent.get('http://www.tumblr.com/dashboard').links
-    puts "Num of links on dashboard: #{links.length}"
-    if links.length <= 14 # TODO Tumblr mainpage has 14 links.
-      raise RuntimeError, "Could not reach the Dashboard, cookies are probably no longer valid!" 
-    end
-  rescue  
-    puts "#{$!}... logging in..."
-    page = $agent.get("http://www.tumblr.com/login")
-    form = page.forms[0]
-    form.email = $config[:tumblr][:email]
-    form.password = $config[:tumblr][:password]
-    $agent.submit(form)
-    puts "done, saving cookies"
-    $agent.cookie_jar.save_as('cookies.yml') # Save the cookies
-  ensure
-    puts "Authenticated!"
-  end
-end
-
-
-# get radar page
-page = $agent.get("http://www.tumblr.com/explore")
-
-puts "Images..."
-page.radar_images.reverse.each { |p| save(p) }
-puts "Posts..."
-page.radar_posts.reverse.each  { |p| save(p) }
+# work it
+puts "Fetching /radar..."
+page = $agent.get("http://www.tumblr.com/radar")
+page.radar_posts.reverse.each { |p| save(p) }
 puts "Done."
 
 exit 0
