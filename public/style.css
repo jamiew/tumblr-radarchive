@@ -46,6 +46,13 @@ a img { border-width: 0px; }
 }
 
 
+#search {
+  text-align: right;
+  position: relative;
+  top: -60px;
+}
+
+
 
 
 /* nav */
