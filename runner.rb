@@ -25,8 +25,8 @@ def authenticate?; $config[:tumblr][:authenticate] || false; end
 
 # Connect to database
 $config[:database] = YAML.load_file( File.dirname(__FILE__)+'/config/database.yml')
-ActiveRecord::Base.logger = Logger.new(File.dirname(__FILE__)+'/database.log')
-ActiveRecord::Base.colorize_logging = true
+#ActiveRecord::Base.logger = Logger.new(File.dirname(__FILE__)+'/database.log')
+#ActiveRecord::Base.colorize_logging = true
 ActiveRecord::Base.establish_connection($config[:database][ (ENV['MERB_ENV'] || :development).to_sym])
 
 # TODO: put in or get from a lib, like extlib, or the future merbified ActiveSupport
@@ -67,7 +67,7 @@ end
 def save(data)
     
   tumblelog_url = /(http:\/\/[^\/]*)(\/.*)/.match(data[:url])[1]
-  puts "#{data[:type]}, URL = #{data[:url]}, author = #{tumblelog_url}"
+  # puts "#{data[:type]}, URL = #{data[:url]}, author = #{tumblelog_url}"
   
   # Find/create the user (tumblelog) who owns this post
   user = User.find_or_initialize_by_url(tumblelog_url)
@@ -82,7 +82,7 @@ def save(data)
         
   # Descend to the page and capture reblogging info (if we're logged in & reblogging stuff)
   obj.reblog_link = post_info_for(data[:url])[:reblog_link] if authenticate?
-  puts "> reblog link: #{obj.reblog_link}"
+  # puts "> reblog link: #{obj.reblog_link}"
   reblog_post(obj) if authenticate? && !obj.reblog_link.blank?
   obj.save!  
 rescue
@@ -109,7 +109,7 @@ end
 
 # post to tumblr (by reblogging it to your specified group)
 def reblog_post(post)
-  # puts "> reblogging: #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
+  puts "> reblogging: #{post.attributes['type']}, #{post.url}, reblog_link => #{post.reblog_link}"
   raise RuntimeError, "Can't post w/o a reblog link" if post.reblog_link.nil? or post.reblog_link.empty? or post.reblog_link == '/'
   
   type = post.attributes['type'] # FIXME: stupid not-overriding-STI hackthrough nonsense
@@ -127,7 +127,7 @@ def reblog_post(post)
 
   # ....and submit the form
   page = $agent.submit(form)
-  puts "> done; #{page.body.length} bytes on resulting page."
+  # puts "> done; #{page.body.length} bytes on resulting page."
 rescue
   STDERR.puts "Error submitting reblog: #{$!}"
 end
