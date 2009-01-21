@@ -7,6 +7,6 @@ I only have <%= time_ago_in_words(Post.find(:first).created_at) %> worth of data
 <ol id="leaderboard">
 <% @users.group_by { |g| g.post_count }.sort_by { |post_count,users| post_count.to_i }.reverse.each { |post_count, users| -%>
 	<li><strong><%= post_count %> <%= post_count.to_i > 1 ? 'posts' : 'post' %></strong> <% if users.length > 1 %><%= users.length %> people <% end %>
-	<%= users.collect { |u| "<a href=\"#{u.url}\">#{u.name}</a>" }.join(', ') %> <span class="post-count"></span</li>
+	<%= users.collect { |u| "<a href=\"#{u.url}\">#{u.name || u.url.gsub('http://','')}</a>" }.join(', ') %> <span class="post-count"></span</li>
 <% } -%>
 </ol> <!-- #leaderboard -->
