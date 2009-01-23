@@ -47,7 +47,7 @@ class Posts < Merb::Controller
   
   def leaderboard
     # @users = User.find(:all)
-    @users = User.find_by_sql('SELECT users.name, users.url, count(posts.id) AS post_count FROM posts, users WHERE posts.user_id = users.id GROUP BY users.name')      
+    @users = User.find_by_sql('SELECT users.name, users.url, count(posts.id) AS post_count FROM posts, users WHERE posts.user_id = users.id GROUP BY users.url')      
     render
   end
   
