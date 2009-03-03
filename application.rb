@@ -6,7 +6,7 @@ Merb::Router.prepare do |r|
   r.match('/rss').to(:controller => 'posts', :action => 'index', :format => 'xml').name(:rss)
   r.match('/leaderboard').to(:controller => 'posts', :action => 'leaderboard').name(:leaderboard)
   r.match('/tags').to(:controller => 'posts', :action => 'tags').name(:tags)
-  r.match('/tag').to(:controller => 'posts', :action => 'tag').name(:tag)
+  r.match('/tag').to(:controller => 'posts', :action => 'tag_post').name(:tag)
   # r.default_routes
 end
 
