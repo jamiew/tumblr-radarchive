@@ -10,7 +10,7 @@
 
 require 'rubygems'
 # gem 'mechanize', '0.8.5'
-gem 'mechanize', '0.9.0' # w/ Nokogiri (which has no .innerHTML afaik)
+gem 'mechanize', '=0.9.0' # w/ Nokogiri (which has no .innerHTML afaik)
 require 'mechanize'
 require 'yaml'
 require 'active_record'
@@ -94,15 +94,19 @@ end
 # Fetch a single post and return notable information
 # For now just returning the reblog link, but ideally would also grab their Tumblelog's name, etc.
 def post_info_for(url)
+  puts "post_info_for(#{url})"
   page = $agent.get(url)
-  iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src'] rescue nil
+  #puts url
+  #puts page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }.inspect
+
+  iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src']
 
   # puts "Getting iframe @ #{iframe_url.inspect}..."
   iframe = $agent.get(iframe_url)
   return { :reblog_link => iframe.links.first.href }
 
 rescue
-  STDERR.puts "(!!) Error getting original page: #{$!}"
+  STDERR.puts "(!!) Error getting original page: #{$!} \n#{$!.backtrace.join('\n\t')}"
 end  
 
 
