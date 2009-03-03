@@ -164,8 +164,8 @@ def logged_in?
   links = $agent.get('http://www.tumblr.com/dashboard').links
   puts "Num of links on dashboard: #{links.length}"
 
-   # Tumblr mainpage has 14 links, which is where we'll get redirected to if not logged in
-  return links.length >= 14
+   # Tumblr mainpage has 19 links, which is where we'll get redirected to if not logged in
+  return links.length > 19
 end
 
 
