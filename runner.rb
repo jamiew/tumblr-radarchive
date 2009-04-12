@@ -81,7 +81,7 @@ def save(data)
   obj.content = data[:content]
         
   # Descend to the page and capture reblogging info (if we're logged in & reblogging stuff)
-  obj.reblog_link = post_info_for(data[:url])[:reblog_link] if authenticate?
+  obj.reblog_link = post_info_for(data[:url])[:reblog_link] if authenticate? rescue (puts "Could not get reblog link")
   # puts "> reblog link: #{obj.reblog_link}"
   reblog_post(obj) if authenticate? && !obj.reblog_link.blank?
   obj.save!  
@@ -99,6 +99,10 @@ def post_info_for(url)
   #puts url
   #puts page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }.inspect
 
+  if page.search('iframes').blank?
+    puts "No iframes? Aborting..."
+    return
+  end
   iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src']
 
   # puts "Getting iframe @ #{iframe_url.inspect}..."
