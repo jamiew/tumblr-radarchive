@@ -99,11 +99,11 @@ def post_info_for(url)
   #puts url
   #puts page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }.inspect
 
-  if page.search('iframes').blank?
+  if page.iframes.blank?
     puts "No iframes? Aborting..."
     return
   end
-  iframe_url = page.search('iframe').select { |i| i['src'] =~ /tumblr\.com/ }[0]['src']
+  iframe_url = page.iframes.select { |i| i.src =~ /tumblr\.com/ }[0].src
 
   # puts "Getting iframe @ #{iframe_url.inspect}..."
   iframe = $agent.get(iframe_url)
